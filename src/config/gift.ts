@@ -4,7 +4,7 @@
  */
 export const giftConfig = {
   friendName: "Fati",
-  passcode: "2004",
+  passcode: "2610",
   // Add an MP3 under public/music/ and set this value, for example: "/music/birthday.mp3".
   musicPath: "",
   // Add or replace paths here. Files currently live in public/images/.
