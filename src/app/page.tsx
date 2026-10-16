@@ -283,6 +283,44 @@ const funnyWrongJokes = [
   },
 ];
 
+type FinalMemoryPhotoProps = {
+  className: string;
+  src: string;
+  height: number;
+  caption: string;
+  rotate: number;
+  fromX: number;
+  fromY: number;
+  delay: number;
+};
+
+function FinalMemoryPhoto({
+  className,
+  src,
+  height,
+  caption,
+  rotate,
+  fromX,
+  fromY,
+  delay,
+}: FinalMemoryPhotoProps) {
+  const reducedMotion = useReducedMotion();
+
+  return (
+    <motion.figure
+      className={`memory-photo ${className}`}
+      initial={reducedMotion ? false : { opacity: 0, x: fromX, y: fromY, rotate: rotate * 1.9, scale: 0.84 }}
+      animate={{ opacity: 1, x: 0, y: 0, rotate, scale: 1 }}
+      transition={{ duration: reducedMotion ? 0 : 0.82, delay: reducedMotion ? 0 : delay, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <div className={`memory-photo-drift ${className}-drift`}>
+        <Image src={src} width={1080} height={height} sizes="150px" alt="" />
+        <span>{caption}</span>
+      </div>
+    </motion.figure>
+  );
+}
+
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("journey");
   const [code, setCode] = useState("");
@@ -562,6 +600,32 @@ return (
         <button className="primary-button" type="button" onClick={() => setScreen("birthday")}>
           Découvrir <span aria-hidden="true">→</span>
         </button>
+
+        {/* Signature + tampon */}
+        <div className="unlock-signature" aria-label="Signé par Dridi Ghassen">
+          <p className="unlock-sig-name">Dridi Ghassen</p>
+          <div className="unlock-stamp" aria-hidden="true">
+            <svg viewBox="0 0 90 90" className="unlock-stamp-ring">
+              <path
+                id="stamp-top-arc"
+                d="M 10,45 A 35,35 0 0,1 80,45"
+                fill="none"
+              />
+              <path
+                id="stamp-bot-arc"
+                d="M 10,45 A 35,35 0 0,0 80,45"
+                fill="none"
+              />
+              <text fontSize="9" fontWeight="700" letterSpacing="2.8" fill="currentColor" textAnchor="middle">
+                <textPath href="#stamp-top-arc" startOffset="50%">DRIDI GHASSEN</textPath>
+              </text>
+              <text fontSize="8.5" fontWeight="700" letterSpacing="2.5" fill="currentColor" textAnchor="middle">
+                <textPath href="#stamp-bot-arc" startOffset="50%">26 · 10 · 2026</textPath>
+              </text>
+              <circle cx="45" cy="45" r="3.2" fill="currentColor" />
+            </svg>
+          </div>
+        </div>
       </motion.section>
     )}
 
@@ -591,7 +655,7 @@ return (
                 opacity: 1,
                 y: 0,
                 rotate: index ? 7 : -8,
-                scale: activePhoto === index ? 1.04 : 0.94,
+                scale: 1,
               }}
               whileHover={{ y: -4 }}
               whileTap={{ scale: 0.98 }}
@@ -610,14 +674,49 @@ return (
           ))}
         </div>
 
+        {/* ── Luxury Birthday Cake ── */}
+        <div className="luxury-cake-wrap" aria-hidden="true">
+          <div className="lc-sparkles">
+            <span className="lc-spark lc-spark-1">✦</span>
+            <span className="lc-spark lc-spark-2">✧</span>
+            <span className="lc-spark lc-spark-3">✦</span>
+          </div>
+          <div className="lc-gems">
+            <span className="lc-gem">💎</span>
+            <span className="lc-gem lc-gem-r">💎</span>
+          </div>
+          <div className="luxury-cake">
+            <div className="lc-candles">
+              <div className="lc-candle lc-candle-s"><i>🔥</i></div>
+              <div className="lc-candle lc-candle-m"><i>🔥</i></div>
+              <div className="lc-candle lc-candle-l"><i>🔥</i></div>
+              <div className="lc-candle lc-candle-m"><i>🔥</i></div>
+              <div className="lc-candle lc-candle-s"><i>🔥</i></div>
+            </div>
+            <div className="lc-tier lc-tier-top">
+              <span className="lc-tier-rose">🌸</span>
+              <span className="lc-tier-rose">🌸</span>
+              <span className="lc-tier-rose">🌸</span>
+            </div>
+            <div className="lc-icing" />
+            <div className="lc-tier lc-tier-bot">
+              <span className="lc-tier-heart">♡</span>
+              <span className="lc-tier-heart">♡</span>
+              <span className="lc-tier-heart">♡</span>
+              <span className="lc-tier-heart">♡</span>
+              <span className="lc-tier-heart">♡</span>
+            </div>
+            <div className="lc-plate" />
+          </div>
+        </div>
         <button
           className="wish-button"
           type="button"
           onClick={() => setWishCardOpen(true)}
           aria-haspopup="dialog"
         >
-          <span className="wish-button-icon" aria-hidden="true">✉</span>
-          <span>Fais un vœu</span>
+          <span className="wish-button-icon" aria-hidden="true">🕯️</span>
+          <span>Fais ton vœu</span>
           <b aria-hidden="true">→</b>
         </button>
 
@@ -635,7 +734,7 @@ return (
               className="wish-note-overlay"
               role="dialog"
               aria-modal="true"
-              aria-label="Un vœu d'anniversaire"
+              aria-label="Mon vœu pour toi"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -646,7 +745,8 @@ return (
                 initial={{ opacity: 0, y: 25, scale: 0.92 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 15, scale: 0.94 }}
-                onMouseDown={(event) => event.stopPropagation()}
+                transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                onMouseDown={(e) => e.stopPropagation()}
               >
                 <button
                   ref={closeWishRef}
@@ -654,15 +754,11 @@ return (
                   type="button"
                   onClick={() => setWishCardOpen(false)}
                   aria-label="Fermer le vœu"
-                >
-                  ×
-                </button>
+                >×</button>
                 <div className="wish-envelope-letter">
-                  <p className="wish-note-kicker">Un vœu pour toi</p>
+                  <p className="wish-note-kicker">Mon vœu pour toi 🩷</p>
                   <p className="wish-note-message">{giftConfig.wishMessage}</p>
-                  <p className="wish-note-signature">
-                    {giftConfig.wishSignature}
-                  </p>
+                  <p className="wish-note-signature">{giftConfig.wishSignature}</p>
                 </div>
                 <div className="wish-envelope-flap" />
                 <span className="wish-envelope-seal" aria-hidden="true">🦋</span>
@@ -731,7 +827,7 @@ return (
                   <svg viewBox="0 0 100 100" className="postmark-svg">
                     <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="1.2" strokeDasharray="3 3" fill="none" />
                     <circle cx="50" cy="50" r="39" stroke="currentColor" strokeWidth="0.8" fill="none" />
-                    <text x="50" y="24" textAnchor="middle" fontSize="6.8" fill="currentColor" letterSpacing="1.8" fontWeight="700">TUNIS · MAROC</text>
+                    <text x="50" y="22" textAnchor="middle" fontSize="6.2" fill="currentColor" letterSpacing="1.6" fontWeight="700">TUNIS · MAROC</text>
                     <text x="50" y="52" textAnchor="middle" fontSize="12" fill="currentColor">✦</text>
                     <text x="50" y="80" textAnchor="middle" fontSize="6.4" fill="currentColor" letterSpacing="1.8" fontWeight="600">26 · 10 · 2026</text>
                   </svg>
@@ -750,7 +846,7 @@ return (
 
                   <div className="card-signature-block">
                     <span className="signature-flourish" aria-hidden="true">✦ ───── ✦</span>
-                    <p className="card-signature">De Tunisie, avec amitié 🤍</p>
+                    <p className="card-signature">De Tunisie, avec amitié 🩷</p>
                   </div>
                 </div>
               </motion.article>
@@ -833,29 +929,79 @@ return (
             />
           ))}
         </div>
-        <div className="memory-photo memory-photo-one">
-          <Image src={giftConfig.albumPhotos[0]} width={1080} height={985} sizes="120px" alt="" />
-          <span>soleil</span>
-        </div>
-        <div className="memory-photo memory-photo-two">
-          <Image src={giftConfig.albumPhotos[1]} width={1080} height={2044} sizes="120px" alt="" />
-          <span>la fêtée</span>
-        </div>
-        <div className="final-star" aria-hidden="true">🦋</div>
-        <p className="story-kicker">Un souvenir de Tunisie</p>
-        <h2>Joyeux anniversaire,<br /><em>Fatima.</em></h2>
-        <p className="final-amazigh" lang="zgh-Tfng">ⴼⴰⵟⵉⵎⴰ ⴻⵣⵣⴰⵀⵔⴰ</p>
-        <article className="memory-postcard">
+        <FinalMemoryPhoto
+          className="memory-photo-one"
+          src={giftConfig.albumPhotos[0]}
+          height={985}
+          caption="soleil"
+          rotate={-9}
+          fromX={-74}
+          fromY={46}
+          delay={0.32}
+        />
+        <FinalMemoryPhoto
+          className="memory-photo-two"
+          src={giftConfig.albumPhotos[1]}
+          height={2044}
+          caption="la fêtée"
+          rotate={9}
+          fromX={78}
+          fromY={64}
+          delay={0.46}
+        />
+        <motion.div
+          className="final-star"
+          aria-hidden="true"
+          initial={{ opacity: 0, scale: 0.65, rotate: -20 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ duration: 0.5, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+        >🦋</motion.div>
+        <motion.p
+          className="story-kicker"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.2 }}
+        >Un souvenir de Tunisie</motion.p>
+        <motion.h2
+          initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          transition={{ duration: 0.65, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
+        >Joyeux anniversaire,<br /><em>Fatima.</em></motion.h2>
+        <motion.p
+          className="final-amazigh"
+          lang="zgh-Tfng"
+          initial={{ opacity: 0, y: 9 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.42 }}
+        >ⴼⴰⵟⵉⵎⴰ ⴻⵣⵣⴰⵀⵔⴰ</motion.p>
+        <motion.article
+          className="memory-postcard"
+          initial={{ opacity: 0, y: 18, rotate: -3 }}
+          animate={{ opacity: 1, y: 0, rotate: -1.5 }}
+          transition={{ duration: 0.58, delay: 0.52, ease: [0.22, 1, 0.36, 1] }}
+        >
           <p>365 nouvelles petites raisons de sourire.</p>
           <small>Garde ce moment près de toi ✦</small>
-        </article>
-        <div className="qr-memory">
-          <Image src="/birthday-gift-qr.png" width={108} height={108} alt="QR code du cadeau d'anniversaire" />
-          <span>Un dernier souvenir à garder</span>
-        </div>
-        <button className="text-button" type="button" onClick={replay}>
-          Rejouer notre histoire <span aria-hidden="true">↻</span>
-        </button>
+        </motion.article>
+        <motion.div
+          className="qr-memory"
+          initial={{ opacity: 0, y: 12, scale: 0.92 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.45, delay: 0.72 }}
+        >
+          <Image src="/birthday-gift-qr.png" width={80} height={80} alt="QR code du cadeau d'anniversaire" />
+          <span>Un souvenir à scanner</span>
+        </motion.div>
+        <motion.button
+          className="text-button"
+          type="button"
+          onClick={replay}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.42, delay: 0.68 }}
+        >
+          Revivre la surprise <span aria-hidden="true">↻</span>
+        </motion.button>
       </motion.section>
     )}
   </main>
