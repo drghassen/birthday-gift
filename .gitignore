@@ -19,6 +19,15 @@
 # misc
 .DS_Store
 *.pem
+*.eps
+51041.*
+/eps_extracted.png
+/plane_crop_sample.jpg
+/plane_floodfill.png
+/scratch_preview.png
+/small_plane.png
+/test_plane_extracted.png
+
 
 # debug
 npm-debug.log*

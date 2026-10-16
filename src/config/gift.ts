@@ -10,17 +10,28 @@ export const giftConfig = {
   // Add or replace paths here. Files currently live in public/images/.
   albumPhotos: ["/images/fati.jpg", "/images/fati1.jpg"],
   // This card opens after she makes her wish. Personalize it with your own words.
-  wishMessage: "May every wish you carry find its way to you, and may this new year be as beautiful, gentle, and bright as your heart.",
-  letter: `À la plus belle des amies,
+  wishMessage: "Que chaque souhait que vous portez trouve son chemin vers vous, et que cette nouvelle année soit aussi belle, douce et lumineuse que votre cœur.",
+  wishSignature: "Avec toute mon amitié et mes meilleurs vœux",
+  letter: `**À toi, Ghzela,**
 
-Je te souhaite une année pleine de joie, de rires, et de toutes les choses que tu aimes. Je souhaite que chaque matin, le soleil brille sur ton cœur avec sérénité, et que chaque nouveau jour t'apporte une petite raison de sourire.
+Je te souhaite une année remplie de joie, de rires et de toutes ces petites choses qui rendent la vie plus belle. J'espère que chaque matin t'apportera une nouvelle raison de sourire et que les jours à venir seront remplis de belles surprises.
 
-Sache que tu es plus forte que tu ne le penses, et que les jours difficiles ne sont pas la fin, mais le début de quelque chose de beau. Qu'Allah t'écrive le bien où qu'il soit, et t'ouvre des portes que tu n'imaginais même pas.
+**Nti katstahli kolchi zwin f had denya.** 🤍
 
-De la Tunisie au Maroc, c'est une petite surprise pour te dire : joyeux anniversaire ma belle amie 🦋`,
-  secondLetter: `Et inchallah cette année sera belle, avec beaucoup de rires, beaucoup de belles choses, et beaucoup de souvenirs dont tu te souviendras.
+Nchallah had l3am yjib lik ghir lkhir, lfar7a w tawfi9 f kolchi li katmenny. W ila kano chi ayam s3ab, matnsaych belli dima kayn lkhir jay, 7ta ila ma ban likch daba.
 
-Et si un jour tu te sens seule... sache qu'il y a quelqu'un en Tunisie qui pense à toi. 😏🦋`,
+Qu'Allah t'accorde le meilleur, apaise ton cœur et t'ouvre des portes qui te mèneront vers tout ce que tu mérites.
+
+De la Tunisie au Maroc, cette petite surprise est une façon de te souhaiter un merveilleux anniversaire et de te rappeler que tu mérites plein de belles choses.
+
+**Joyeux anniversaire, a zwina !** 🎂🦋`,
+  secondLetter: `Nchallah had l3am ykoun zwin 3lik, w t3ichi fih des moments li yfer7o 9albek, t3arfi fih nas zwinin, w tsaybi des souvenirs li yb9aw m3ak dima. 🤍
+
+W ila chi nhar 7ssiti brassek mday9a, wala bghiti ghir thadri chwia, tdh7ki, wala tbeddli ljaw, **rah t9dri thadri m3aya bla ma t7essi b chi pression.** 
+
+Même si la Tunisie et le Maroc nous séparent, j'espère que cette petite surprise te fera sourire et rendra ta journée un peu plus spéciale.
+
+**Kol 3am w nti bkhir, w nchallah tchoufi ghir ma katmenny.** 💜`,
   colors: {
     blush: "#fce5e7",
     coral: "#fa9b99",
