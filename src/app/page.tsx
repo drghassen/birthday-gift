@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { geoDistance, geoInterpolate, geoMercator, geoPath } from "d3-geo";
 import { feature } from "topojson-client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { GeometryObject, Topology } from "topojson-specification";
 import worldAtlas from "world-atlas/countries-110m.json";
@@ -727,45 +728,6 @@ return (
         >
           Une petite lettre pour toi <span aria-hidden="true">→</span>
         </button>
-
-        <AnimatePresence>
-          {wishCardOpen && (
-            <motion.div
-              className="wish-note-overlay"
-              role="dialog"
-              aria-modal="true"
-              aria-label="Mon vœu pour toi"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onMouseDown={() => setWishCardOpen(false)}
-            >
-              <motion.article
-                className={`wish-envelope ${wishEnvelopeOpened ? "is-open" : ""}`}
-                initial={{ opacity: 0, y: 25, scale: 0.92 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 15, scale: 0.94 }}
-                transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
-                onMouseDown={(e) => e.stopPropagation()}
-              >
-                <button
-                  ref={closeWishRef}
-                  className="wish-note-close"
-                  type="button"
-                  onClick={() => setWishCardOpen(false)}
-                  aria-label="Fermer le vœu"
-                >×</button>
-                <div className="wish-envelope-letter">
-                  <p className="wish-note-kicker">Mon vœu pour toi 🩷</p>
-                  <p className="wish-note-message">{giftConfig.wishMessage}</p>
-                  <p className="wish-note-signature">{giftConfig.wishSignature}</p>
-                </div>
-                <div className="wish-envelope-flap" />
-                <span className="wish-envelope-seal" aria-hidden="true">🦋</span>
-              </motion.article>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </motion.section>
     )}
 
@@ -1003,6 +965,48 @@ return (
           Revivre la surprise <span aria-hidden="true">↻</span>
         </motion.button>
       </motion.section>
+    )}
+
+    {typeof document !== "undefined" && createPortal(
+      <AnimatePresence>
+        {wishCardOpen && (
+          <motion.div
+            className="wish-note-overlay"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mon vœu pour toi"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onMouseDown={() => setWishCardOpen(false)}
+          >
+            <motion.article
+              className={`wish-envelope ${wishEnvelopeOpened ? "is-open" : ""}`}
+              initial={{ opacity: 0, y: 25, scale: 0.92 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 15, scale: 0.94 }}
+              transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <button
+                ref={closeWishRef}
+                className="wish-note-close"
+                type="button"
+                onClick={() => setWishCardOpen(false)}
+                aria-label="Fermer le vœu"
+              >×</button>
+              <div className="wish-envelope-letter">
+                <p className="wish-note-kicker">Mon vœu pour toi 🩷</p>
+                <p className="wish-note-message">{giftConfig.wishMessage}</p>
+                <p className="wish-note-signature">{giftConfig.wishSignature}</p>
+              </div>
+              <div className="wish-envelope-flap" />
+              <span className="wish-envelope-seal" aria-hidden="true">🦋</span>
+            </motion.article>
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body
     )}
   </main>
 );
