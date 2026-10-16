@@ -295,6 +295,8 @@ export default function Home() {
   const [showKindnessJoke, setShowKindnessJoke] = useState(true);
   const [letterOpened, setLetterOpened] = useState(false);
   const [letterPage, setLetterPage] = useState<1 | 2>(1);
+  const [showScrollPrompt, setShowScrollPrompt] = useState(false);
+  const letterActionsRef = useRef<HTMLDivElement>(null);
   const [wishEnvelopeOpened, setWishEnvelopeOpened] = useState(false);
   const closeWishRef = useRef<HTMLButtonElement>(null);
   const validationInProgress = useRef(false);
@@ -380,10 +382,50 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, [reducedMotion, screen]);
 
+  useEffect(() => {
+    if (screen !== "letter" || !letterOpened) {
+      setShowScrollPrompt(false);
+      return;
+    }
+
+    const checkVisibility = () => {
+      if (!letterActionsRef.current) return;
+      const rect = letterActionsRef.current.getBoundingClientRect();
+      // If button is below the viewport, show the floating hint
+      const isBelowViewport = rect.top > window.innerHeight - 20;
+      setShowScrollPrompt(isBelowViewport);
+    };
+
+    const timer = window.setTimeout(checkVisibility, 400);
+    window.addEventListener("scroll", checkVisibility, { passive: true });
+    window.addEventListener("resize", checkVisibility);
+
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("scroll", checkVisibility);
+      window.removeEventListener("resize", checkVisibility);
+    };
+  }, [screen, letterOpened, letterPage]);
+
+  const scrollToLetterActions = () => {
+    letterActionsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  const handleNextLetterPage = () => {
+    setLetterPage(2);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handlePrevLetterPage = () => {
+    setLetterPage(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const replay = () => {
     setCode(""); setError(false); setFailedAttempts(0); setUnlocking(false); setActivePhoto(0);
     validationInProgress.current = false;
     setWishCardOpen(false); setWishEnvelopeOpened(false); setLetterOpened(false); setLetterPage(1); setScreen("journey");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
 return (
@@ -714,12 +756,32 @@ return (
               </motion.article>
             </AnimatePresence>
 
-            <div className="letter-nav-actions">
+            {/* Floating modern reading cue when button is below the screen */}
+            <AnimatePresence>
+              {showScrollPrompt && (
+                <motion.button
+                  type="button"
+                  className="floating-letter-scroll-prompt"
+                  onClick={scrollToLetterActions}
+                  initial={{ opacity: 0, y: 16, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 12, scale: 0.95 }}
+                  transition={{ duration: 0.28, ease: "easeOut" }}
+                  aria-label="Faire défiler vers la suite"
+                >
+                  <span className="scroll-prompt-icon" aria-hidden="true">📜</span>
+                  <span>Faire défiler la lettre</span>
+                  <span className="scroll-prompt-chevron" aria-hidden="true">↓</span>
+                </motion.button>
+              )}
+            </AnimatePresence>
+
+            <div ref={letterActionsRef} className="letter-nav-actions">
               {letterPage === 1 ? (
                 <button
                   className="primary-button letter-action-btn"
                   type="button"
-                  onClick={() => setLetterPage(2)}
+                  onClick={handleNextLetterPage}
                 >
                   <span>Lire la suite</span>
                   <span className="action-arrow" aria-hidden="true">→</span>
@@ -729,14 +791,17 @@ return (
                   <button
                     className="ghost-back-btn"
                     type="button"
-                    onClick={() => setLetterPage(1)}
+                    onClick={handlePrevLetterPage}
                   >
                     <span aria-hidden="true">←</span> Relire la première lettre
                   </button>
                   <button
                     className="primary-button letter-action-btn"
                     type="button"
-                    onClick={() => setScreen("final")}
+                    onClick={() => {
+                      setScreen("final");
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
                   >
                     <span>Une dernière surprise</span>
                     <span className="action-arrow" aria-hidden="true">→</span>
