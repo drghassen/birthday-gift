@@ -27,7 +27,7 @@ De la Tunisie au Maroc, cette petite surprise est une façon de te souhaiter un 
 **Joyeux anniversaire, a zwina !** 🎂🦋`,
   secondLetter: `Nchallah had l3am ykoun zwin 3lik, w t3ichi fih des moments li yfer7o 9albek, t3arfi fih nas zwinin, w tsaybi des souvenirs li yb9aw m3ak dima. 🩷
 
-W ila chi nhar 7ssiti brassek mday9a, wala bghiti ghir thadri chwia, tdh7ki, wala tbeddli ljaw, **rah t9dri thadri m3aya bla ma t7essi b chi pression.** 
+W ila chi nhar 7ssiti brassek mday9a, wala bghiti ghir thadri chwia, tdh7ki, wala tbeddli ljaw, **Il y a quelqu'un en Tunisie toujours présent, qui t'écoute, et qui pense à toi. Pas juste des mots, mais vraiment. 🤍** 
 
 Même si la Tunisie et le Maroc nous séparent, j'espère que cette petite surprise te fera sourire et rendra ta journée un peu plus spéciale.
 

@@ -146,13 +146,21 @@ function JourneyMap({ onOpenCode }: { onOpenCode: () => void }) {
     setRemainingDistance(estimatedDistanceKm);
     let lastStep = -1;
     const startedAt = performance.now();
-    const duration = 4600;
+    const flightDelay = 800;
+    const flightDuration = 5400;
     let frame = 0;
     const update = (now: number) => {
-      const progress = Math.min((now - startedAt) / duration, 1);
-      const nextDistance = Math.max(0, Math.round(estimatedDistanceKm * (1 - progress)));
-      // Text updates are deliberately quantised: React does not render on every animation frame.
-      const nextStep = Math.floor(progress * 24);
+      const elapsed = now - startedAt;
+      if (elapsed < flightDelay) {
+        frame = requestAnimationFrame(update);
+        return;
+      }
+      const progress = Math.min((elapsed - flightDelay) / flightDuration, 1);
+      // Smooth deceleration curve harmonized with the flight path easing
+      const easedProgress = 1 - Math.pow(1 - progress, 2);
+      const nextDistance = Math.max(0, Math.round(estimatedDistanceKm * (1 - easedProgress)));
+      // Text updates are quantised to maintain optimal render performance
+      const nextStep = Math.floor(progress * 36);
       if (nextStep !== lastStep || progress === 1) {
         lastStep = nextStep;
         setRemainingDistance(nextDistance);
@@ -163,12 +171,17 @@ function JourneyMap({ onOpenCode }: { onOpenCode: () => void }) {
     return () => cancelAnimationFrame(frame);
   }, [reducedMotion]);
 
+  // Synchronized cinematic flight: smooth takeoff, steady cruise, gentle landing
+  const flightEase = [0.32, 0.08, 0.24, 1] as const;
   const pathTransition = reducedMotion
     ? { duration: 0 }
-    : { duration: 1.8, ease: [0.22, 1, 0.36, 1] as const };
+    : { duration: 5.4, delay: 0.8, ease: flightEase };
   const flightTransition = reducedMotion
     ? { duration: 0 }
-    : { duration: 3.1, delay: 0.9, ease: [0.25, 0.1, 0.25, 1] as const };
+    : {
+        offsetDistance: { duration: 5.4, delay: 0.8, ease: flightEase },
+        opacity: { duration: 0.5, delay: 0.8, ease: "easeOut" as const },
+      };
 
   return (
     <section className="journey-section" aria-labelledby="journey-title">
@@ -199,36 +212,39 @@ function JourneyMap({ onOpenCode }: { onOpenCode: () => void }) {
                 }}
               >
                 {/* Projected altitude shadow beneath the plane */}
-                <ellipse cx="-2" cy="11" rx="14" ry="3.5" className="plane-shadow" />
+                <ellipse cx="-2.5" cy="14" rx="18" ry="4.2" className="plane-shadow" />
                 {/* Soft ambient flight illumination */}
-                <circle cx="0" cy="0" r="15" className="plane-ambient-glow" />
-                {/* Clean, transparent, perfectly oriented aircraft sprite */}
+                <circle cx="0" cy="0" r="18" className="plane-ambient-glow" />
+                {/* Clean, transparent, perfectly oriented aircraft sprite (+30% larger, crisp & balanced) */}
                 <image
                   href="/plane_west.png"
-                  x="-17"
-                  y="-6"
-                  width="34"
-                  height="11.8"
+                  x="-22"
+                  y="-7.6"
+                  width="44"
+                  height="15.3"
                   preserveAspectRatio="xMidYMid meet"
                 />
                 {/* Twin jet engine warm exhaust glows */}
-                <ellipse cx="6" cy="4" rx="2" ry="1.2" className="plane-engine-glow" />
-                <ellipse cx="11" cy="4" rx="2" ry="1.2" className="plane-engine-glow" />
+                <ellipse cx="7.5" cy="5.2" rx="2.5" ry="1.4" className="plane-engine-glow" />
+                <ellipse cx="14" cy="5.2" rx="2.5" ry="1.4" className="plane-engine-glow" />
                 {/* Subtle flashing tail beacon */}
-                <circle cx="15" cy="-5" r="1.1" className="plane-beacon" />
+                <circle cx="19.5" cy="-6.5" r="1.3" className="plane-beacon" />
               </motion.g>
               {/* Sparkle and star trail trailing from the engines */}
               <motion.g
                 className="plane-trail"
                 initial={{ offsetDistance: "0%", opacity: 0 }}
-                animate={{ offsetDistance: "96%", opacity: [0, 1, 0] }}
-                transition={{ duration: 2.9, delay: 1.0, ease: "easeInOut" }}
+                animate={{ offsetDistance: "96%", opacity: [0, 0.95, 0.95, 0] }}
+                transition={{
+                  offsetDistance: { duration: 5.2, delay: 0.95, ease: flightEase },
+                  opacity: { duration: 5.2, delay: 0.95, times: [0, 0.15, 0.85, 1] },
+                }}
                 style={{
                   offsetPath: `path('${journeyPath}')`,
                   offsetRotate: "auto 180deg",
                 }}
               >
-                <text x="24" y="3">✦ · ✧ · ✦</text>
+                <text x="28" y="3.5">✦ · ✧ · ✦</text>
               </motion.g>
             </>
           )}
@@ -322,19 +338,165 @@ function FinalMemoryPhoto({
   );
 }
 
+const VOICE_WAVE_BARS = [
+  6, 11, 17, 24, 13, 19, 27, 21, 14, 25, 29, 20, 12, 16, 23, 28, 24, 18, 14, 22,
+  27, 19, 11, 15, 23, 20, 13, 18, 12, 7,
+];
+
+function formatVoiceTime(seconds: number): string {
+  if (isNaN(seconds) || seconds < 0) return "0:00";
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+}
+
+function InstagramVoiceNote({ src }: { src: string }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const togglePlay = () => {
+    if (!audioRef.current) return;
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(() => {});
+    }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const percent = Math.max(0, Math.min(1, clickX / rect.width));
+    const newTime = percent * duration;
+    audioRef.current.currentTime = newTime;
+    setCurrentTime(newTime);
+  };
+
+  const progress = duration > 0 ? currentTime / duration : 0;
+
+  return (
+    <motion.div
+      className="ig-voice-card"
+      initial={{ opacity: 0, y: 16, scale: 0.94 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.52, delay: 0.58, ease: [0.22, 1, 0.36, 1] }}
+    >
+      <audio
+        ref={audioRef}
+        src={src}
+        preload="metadata"
+        onLoadedMetadata={() => {
+          if (audioRef.current) {
+            setDuration(audioRef.current.duration || 0);
+          }
+        }}
+        onTimeUpdate={() => {
+          if (audioRef.current) {
+            setCurrentTime(audioRef.current.currentTime);
+          }
+        }}
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onEnded={() => {
+          setIsPlaying(false);
+          setCurrentTime(0);
+          if (audioRef.current) audioRef.current.currentTime = 0;
+        }}
+      />
+
+      <div className="ig-voice-header">
+        <span className="ig-voice-badge">
+          <i className="ig-mic-icon" aria-hidden="true">🎙️</i>
+          <span>Message vocal</span>
+        </span>
+        <span className="ig-voice-track">Happy Birthday 🎂</span>
+      </div>
+
+      <div className="ig-voice-bubble">
+        {/* Play/Pause Button */}
+        <button
+          type="button"
+          className={`ig-voice-play-btn ${isPlaying ? "is-playing" : ""}`}
+          onClick={togglePlay}
+          aria-label={isPlaying ? "Mettre en pause le vocal" : "Lancer le vocal d'anniversaire"}
+        >
+          {isPlaying ? (
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true">
+              <rect x="6" y="5" width="4" height="14" rx="2" />
+              <rect x="14" y="5" width="4" height="14" rx="2" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16" aria-hidden="true" style={{ marginLeft: "2px" }}>
+              <path d="M7 4.5v15a1 1 0 0 0 1.54.84l12-7.5a1 1 0 0 0 0-1.68l-12-7.5A1 1 0 0 0 7 4.5z" />
+            </svg>
+          )}
+        </button>
+
+        {/* Audio Waveform */}
+        <div
+          className="ig-voice-waveform"
+          onClick={handleSeek}
+          role="slider"
+          aria-label="Position audio"
+          aria-valuemin={0}
+          aria-valuemax={Math.round(duration)}
+          aria-valuenow={Math.round(currentTime)}
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (!audioRef.current || !duration) return;
+            if (e.key === "ArrowRight") {
+              audioRef.current.currentTime = Math.min(duration, currentTime + 3);
+            } else if (e.key === "ArrowLeft") {
+              audioRef.current.currentTime = Math.max(0, currentTime - 3);
+            } else if (e.key === " " || e.key === "Enter") {
+              e.preventDefault();
+              togglePlay();
+            }
+          }}
+        >
+          {VOICE_WAVE_BARS.map((height, index) => {
+            const barFraction = index / (VOICE_WAVE_BARS.length - 1);
+            const isPlayed = barFraction <= progress;
+            return (
+              <span
+                key={index}
+                className={`ig-wave-bar ${isPlayed ? "is-played" : ""} ${isPlaying && isPlayed ? "is-dancing" : ""}`}
+                style={{
+                  height: `${height}px`,
+                  animationDelay: `${(index % 6) * 0.08}s`,
+                }}
+              />
+            );
+          })}
+        </div>
+
+        {/* Duration / Timer */}
+        <div className="ig-voice-timer">
+          <span>{formatVoiceTime(isPlaying || currentTime > 0 ? currentTime : duration)}</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function Home() {
   const [screen, setScreen] = useState<Screen>("journey");
   const [code, setCode] = useState("");
   const [error, setError] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [unlocking, setUnlocking] = useState(false);
+  const [activeHint, setActiveHint] = useState<(typeof funnyWrongJokes)[number] | null>(null);
+  const hintTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [pressedKey, setPressedKey] = useState<string | number | null>(null);
   const [activePhoto, setActivePhoto] = useState(0);
   const [wishCardOpen, setWishCardOpen] = useState(false);
   const [showKindnessJoke, setShowKindnessJoke] = useState(true);
   const [letterOpened, setLetterOpened] = useState(false);
   const [letterPage, setLetterPage] = useState<1 | 2>(1);
-  const [showScrollPrompt, setShowScrollPrompt] = useState(false);
+  const letterScrollRef = useRef<HTMLDivElement>(null);
   const letterActionsRef = useRef<HTMLDivElement>(null);
   const [wishEnvelopeOpened, setWishEnvelopeOpened] = useState(false);
   const closeWishRef = useRef<HTMLButtonElement>(null);
@@ -362,10 +524,23 @@ export default function Home() {
     validationInProgress.current = true;
     if (code === giftConfig.passcode) {
       setUnlocking(true);
+      if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+      setActiveHint(null);
       window.setTimeout(() => setScreen("unlocked"), 420);
       return;
     }
-    setFailedAttempts((current) => current + 1);
+    setFailedAttempts((current) => {
+      const next = current + 1;
+      const joke = funnyWrongJokes[(next - 1) % funnyWrongJokes.length];
+      setActiveHint(joke);
+
+      if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+      hintTimeoutRef.current = setTimeout(() => {
+        setActiveHint(null);
+      }, 4500);
+
+      return next;
+    });
     setError(true);
     setCode("");
     if (typeof navigator !== "undefined" && "vibrate" in navigator) navigator.vibrate?.([12, 35, 12]);
@@ -378,6 +553,12 @@ export default function Home() {
       return () => window.clearTimeout(timer);
     }
   }, [code, validateCode]);
+
+  useEffect(() => {
+    return () => {
+      if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -421,46 +602,20 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, [reducedMotion, screen]);
 
-  useEffect(() => {
-    if (screen !== "letter" || !letterOpened) {
-      setShowScrollPrompt(false);
-      return;
-    }
-
-    const checkVisibility = () => {
-      if (!letterActionsRef.current) return;
-      const rect = letterActionsRef.current.getBoundingClientRect();
-      // If button is below the viewport, show the floating hint
-      const isBelowViewport = rect.top > window.innerHeight - 20;
-      setShowScrollPrompt(isBelowViewport);
-    };
-
-    const timer = window.setTimeout(checkVisibility, 400);
-    window.addEventListener("scroll", checkVisibility, { passive: true });
-    window.addEventListener("resize", checkVisibility);
-
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener("scroll", checkVisibility);
-      window.removeEventListener("resize", checkVisibility);
-    };
-  }, [screen, letterOpened, letterPage]);
-
-  const scrollToLetterActions = () => {
-    letterActionsRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
 
   const handleNextLetterPage = () => {
     setLetterPage(2);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    letterScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handlePrevLetterPage = () => {
     setLetterPage(1);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    letterScrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const replay = () => {
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    setActiveHint(null);
     setCode(""); setError(false); setFailedAttempts(0); setUnlocking(false); setActivePhoto(0);
     validationInProgress.current = false;
     setWishCardOpen(false); setWishEnvelopeOpened(false); setLetterOpened(false); setLetterPage(1); setScreen("journey");
@@ -469,7 +624,7 @@ export default function Home() {
 
 return (
   <main
-    className={`editorial-shell ${screen === "journey" ? "is-journey" : ""}`}
+    className={`editorial-shell ${screen === "journey" ? "is-journey" : ""} ${screen === "letter" ? "is-letter" : ""}`}
     style={{
       "--blush": giftConfig.colors.blush,
       "--coral": giftConfig.colors.coral,
@@ -554,31 +709,6 @@ return (
               </button>
             ),
           )}
-        </div>
-
-        <div className="code-feedback" aria-live="assertive">
-          <AnimatePresence mode="wait">
-            {failedAttempts > 0 && (
-              <motion.div
-                key={`funny-feedback-${failedAttempts}`}
-                className="funny-feedback-bubble"
-                initial={{ opacity: 0, y: 12, scale: 0.88 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 380, damping: 22 }}
-              >
-                <span className="funny-feedback-emoji" aria-hidden="true">
-                  {funnyWrongJokes[(failedAttempts - 1) % funnyWrongJokes.length].emoji}
-                </span>
-                <p className="funny-feedback-title">
-                  {funnyWrongJokes[(failedAttempts - 1) % funnyWrongJokes.length].title}
-                </p>
-                <p className="funny-feedback-sub">
-                  {funnyWrongJokes[(failedAttempts - 1) % funnyWrongJokes.length].sub}
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </motion.section>
     )}
@@ -676,7 +806,23 @@ return (
         </div>
 
         {/* ── Luxury Birthday Cake ── */}
-        <div className="luxury-cake-wrap" aria-hidden="true">
+        <motion.div
+          className="luxury-cake-wrap"
+          role="button"
+          tabIndex={0}
+          onClick={() => setWishCardOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setWishCardOpen(true);
+            }
+          }}
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.94 }}
+          transition={{ type: "spring", stiffness: 350, damping: 20 }}
+          title="Fais ton vœu !"
+          aria-label="Gâteau d'anniversaire scintillant - clique pour faire ton vœu"
+        >
           <div className="lc-sparkles">
             <span className="lc-spark lc-spark-1">✦</span>
             <span className="lc-spark lc-spark-2">✧</span>
@@ -709,7 +855,7 @@ return (
             </div>
             <div className="lc-plate" />
           </div>
-        </div>
+        </motion.div>
         <button
           className="wish-button"
           type="button"
@@ -740,6 +886,28 @@ return (
         <FloatingMagic />
 
         <div className="letter-header">
+          <div className="letter-segmented-pager" role="tablist" aria-label="Pages de la lettre">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={letterPage === 1}
+              className={`pager-tab ${letterPage === 1 ? "is-active" : ""}`}
+              onClick={handlePrevLetterPage}
+            >
+              <span className="pager-dot" />
+              <span>1re Lettre</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={letterPage === 2}
+              className={`pager-tab ${letterPage === 2 ? "is-active" : ""}`}
+              onClick={handleNextLetterPage}
+            >
+              <span className="pager-dot" />
+              <span>2e Pensée</span>
+            </button>
+          </div>
           <h2>
             {letterPage === 1 ? (
               <>
@@ -768,10 +936,10 @@ return (
               <motion.article
                 key={letterPage}
                 className="birthday-letter"
-                initial={{ opacity: 0, rotateY: -14, y: 18, scale: 0.98 }}
+                initial={{ opacity: 0, rotateY: -10, y: 12, scale: 0.98 }}
                 animate={{ opacity: 1, rotateY: 0, y: 0, scale: 1 }}
-                exit={{ opacity: 0, rotateY: 14, y: -12, scale: 0.98 }}
-                transition={{ duration: 0.42, ease: [0.22, 1, 0.36, 1] }}
+                exit={{ opacity: 0, rotateY: 10, y: -10, scale: 0.98 }}
+                transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
               >
                 {/* Artisanal Wax Seal Badge */}
                 <div className="wax-seal-ornament" aria-hidden="true">
@@ -795,43 +963,25 @@ return (
                   </svg>
                 </div>
 
-                <div className="letter-inner-content">
-                  <p className="card-greeting">
-                    {letterPage === 1
-                      ? "Une lettre d'anniversaire, juste pour toi"
-                      : "Et une dernière petite pensée"}
-                  </p>
+                <div ref={letterScrollRef} className="letter-scroll-body">
+                  <div className="letter-inner-content">
+                    <p className="card-greeting">
+                      {letterPage === 1
+                        ? "Une lettre d'anniversaire, juste pour toi"
+                        : "Et une dernière petite pensée"}
+                    </p>
 
-                  <LetterParagraphs
-                    message={letterPage === 1 ? giftConfig.letter : giftConfig.secondLetter}
-                  />
+                    <LetterParagraphs
+                      message={letterPage === 1 ? giftConfig.letter : giftConfig.secondLetter}
+                    />
 
-                  <div className="card-signature-block">
-                    <span className="signature-flourish" aria-hidden="true">✦ ───── ✦</span>
-                    <p className="card-signature">De Tunisie, avec amitié 🩷</p>
+                    <div className="card-signature-block">
+                      <span className="signature-flourish" aria-hidden="true">✦ ───── ✦</span>
+                      <p className="card-signature">De Tunisie, avec amitié 🩷</p>
+                    </div>
                   </div>
                 </div>
               </motion.article>
-            </AnimatePresence>
-
-            {/* Floating modern reading cue when button is below the screen */}
-            <AnimatePresence>
-              {showScrollPrompt && (
-                <motion.button
-                  type="button"
-                  className="floating-letter-scroll-prompt"
-                  onClick={scrollToLetterActions}
-                  initial={{ opacity: 0, y: 16, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 12, scale: 0.95 }}
-                  transition={{ duration: 0.28, ease: "easeOut" }}
-                  aria-label="Faire défiler vers la suite"
-                >
-                  <span className="scroll-prompt-icon" aria-hidden="true">📜</span>
-                  <span>Faire défiler la lettre</span>
-                  <span className="scroll-prompt-chevron" aria-hidden="true">↓</span>
-                </motion.button>
-              )}
             </AnimatePresence>
 
             <div ref={letterActionsRef} className="letter-nav-actions">
@@ -945,6 +1095,10 @@ return (
           <p>365 nouvelles petites raisons de sourire.</p>
           <small>Garde ce moment près de toi ✦</small>
         </motion.article>
+
+        {/* ── Instagram Voice Note (Happy Birthday Song) ── */}
+        <InstagramVoiceNote src="/audio/HappyBirthday.mpeg" />
+
         <motion.div
           className="qr-memory"
           initial={{ opacity: 0, y: 12, scale: 0.92 }}
@@ -1008,6 +1162,47 @@ return (
       </AnimatePresence>,
       document.body
     )}
+
+    {typeof document !== "undefined" &&
+      createPortal(
+        <div className="passcode-toast-viewport" aria-live="polite">
+          <AnimatePresence>
+            {screen === "code" && activeHint && (
+              <motion.div
+                key={activeHint.title}
+                className="passcode-hint-toast"
+                role="alert"
+                aria-live="assertive"
+                initial={{ opacity: 0, y: -20, scale: 0.92 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -14, scale: 0.94 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              >
+                <div className="hint-toast-badge" aria-hidden="true">
+                  {activeHint.emoji}
+                </div>
+                <div className="hint-toast-content">
+                  <p className="hint-toast-title">{activeHint.title}</p>
+                  <p className="hint-toast-sub">{activeHint.sub}</p>
+                </div>
+                <button
+                  type="button"
+                  className="hint-toast-dismiss"
+                  onClick={() => {
+                    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+                    setActiveHint(null);
+                  }}
+                  aria-label="Fermer l'indice"
+                >
+                  ×
+                </button>
+                <div className="hint-toast-timer-bar" aria-hidden="true" />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>,
+        document.body
+      )}
   </main>
 );
 }
