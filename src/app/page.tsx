@@ -10,6 +10,7 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { GeometryObject, Topology } from "topojson-specification";
 import worldAtlas from "world-atlas/countries-110m.json";
 import { giftConfig } from "@/config/gift";
+import { getTypewriterDuration, Typewriter } from "@/components/Typewriter";
 
 const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, "", 0, "delete"] as const;
 const highlightedCountries = new Set(["504", "788"]);
@@ -42,6 +43,27 @@ const confetti = Array.from({ length: 26 }, (_, index) => ({
   delay: (index % 8) * 0.08,
   rotate: (index * 47) % 180,
 }));
+const birthdayFireworkBursts = [
+  { left: "12%", top: "21%", delay: 0, color: "#f2a2b5" },
+  { left: "87%", top: "18%", delay: 1.15, color: "#f4b56b" },
+  { left: "20%", top: "59%", delay: 2.3, color: "#d985a1" },
+  { left: "81%", top: "54%", delay: 3.45, color: "#b979a9" },
+  { left: "49%", top: "14%", delay: 4.6, color: "#f7c46d" },
+  { left: "50%", top: "69%", delay: 5.75, color: "#e7839b" },
+  { left: "9%", top: "43%", delay: 6.7, color: "#d8a0c8" },
+] as const;
+const birthdayFireworkParticles = Array.from({ length: 34 }, (_, index) => {
+  const angle = (Math.PI * 2 * index) / 34 + (index % 2 ? 0.04 : 0);
+  const distance = 66 + (index % 6) * 12;
+  return {
+    x: `${Math.cos(angle) * distance}px`,
+    y: `${Math.sin(angle) * distance + 18}px`,
+    size: `${index % 4 === 0 ? 5 : index % 3 === 0 ? 4 : 3}px`,
+    delay: `${(index % 5) * 0.025}s`,
+    duration: `${1.28 + (index % 4) * 0.1}s`,
+  };
+});
+const LETTER_BLOCK_PAUSE = 320;
 
 type Screen = "journey" | "code" | "unlocked" | "birthday" | "letter" | "final";
 
@@ -49,7 +71,43 @@ function FloatingMagic() {
   return <div className="floating-magic" aria-hidden="true"><i>✦</i><i>✧</i><i>✦</i><i>✧</i><i>✦</i></div>;
 }
 
-function FormattedInline({ text }: { text: string }) {
+function BirthdayFireworks() {
+  const reducedMotion = useReducedMotion();
+
+  if (reducedMotion) return null;
+
+  return (
+    <div className="birthday-fireworks" aria-hidden="true">
+      {birthdayFireworkBursts.map((burst) => (
+        <span
+          className="birthday-firework"
+          key={`${burst.left}-${burst.top}`}
+          style={{
+            left: burst.left,
+            top: burst.top,
+            "--firework-delay": `${burst.delay}s`,
+            "--firework-color": burst.color,
+          } as React.CSSProperties}
+        >
+          {birthdayFireworkParticles.map((particle, index) => (
+            <i
+              key={index}
+              style={{
+                "--spark-x": particle.x,
+                "--spark-y": particle.y,
+                "--spark-size": particle.size,
+                "--spark-delay": particle.delay,
+                "--spark-duration": particle.duration,
+              } as React.CSSProperties}
+            />
+          ))}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function formatInline(text: string) {
   const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
   return (
     <>
@@ -66,12 +124,24 @@ function FormattedInline({ text }: { text: string }) {
   );
 }
 
-function LetterParagraphs({ message }: { message: string }) {
+function getLetterSequenceDuration(message: string, startDelay = 0) {
+  return message.split("\n\n").reduce((nextDelay, paragraph) => {
+    const visibleText = paragraph.trim().replace(/\*\*/g, "").replace(/\*/g, "");
+    return nextDelay + getTypewriterDuration(visibleText) + LETTER_BLOCK_PAUSE;
+  }, startDelay);
+}
+
+function LetterParagraphs({ message, delay = 0 }: { message: string; delay?: number }) {
   const paragraphs = message.split("\n\n");
+  let nextDelay = delay;
+
   return (
     <div className="letter-message">
       {paragraphs.map((paragraph, index) => {
         const trimmed = paragraph.trim();
+        const visibleText = trimmed.replace(/\*\*/g, "").replace(/\*/g, "");
+        const revealDelay = nextDelay;
+        nextDelay += getTypewriterDuration(visibleText) + LETTER_BLOCK_PAUSE;
 
         // Salutation opening (e.g. **À toi, Ghzela,**)
         if (trimmed.startsWith("**À toi,") && trimmed.endsWith("**")) {
@@ -82,9 +152,9 @@ function LetterParagraphs({ message }: { message: string }) {
               className="letter-salutation"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.32, delay: index * 0.04 }}
+              transition={{ duration: 0.32, delay: revealDelay / 1000 }}
             >
-              <span className="salutation-text">{name}</span>
+              <Typewriter as="span" className="salutation-text" delay={revealDelay}>{name}</Typewriter>
               <span className="salutation-flourish" aria-hidden="true">🌸</span>
             </motion.div>
           );
@@ -107,11 +177,11 @@ function LetterParagraphs({ message }: { message: string }) {
               className="letter-quote-callout"
               initial={{ opacity: 0, scale: 0.97, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={{ duration: 0.35, delay: index * 0.05 }}
+              transition={{ duration: 0.35, delay: revealDelay / 1000 }}
             >
               <span className="callout-spark" aria-hidden="true">✦</span>
               <div className="callout-body">
-                <FormattedInline text={trimmed} />
+                <Typewriter as="span" delay={revealDelay}>{formatInline(trimmed)}</Typewriter>
               </div>
             </motion.aside>
           );
@@ -123,9 +193,9 @@ function LetterParagraphs({ message }: { message: string }) {
             className="letter-body-p"
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.28, delay: index * 0.04 }}
+            transition={{ duration: 0.28, delay: revealDelay / 1000 }}
           >
-            <FormattedInline text={trimmed} />
+            <Typewriter as="span" delay={revealDelay}>{formatInline(trimmed)}</Typewriter>
           </motion.p>
         );
       })}
@@ -257,10 +327,10 @@ function JourneyMap({ onOpenCode }: { onOpenCode: () => void }) {
         <p className="distance-counter"><span>Distance estimée restante</span><strong>{remainingDistance.toLocaleString("fr-FR")} km</strong></p>
       </div>
       <div className="journey-copy">
-        <p className="eyebrow">Route 01 · Un cadeau pour toi</p>
-        <h1 id="journey-title">De Monastir <span>au Maroc</span></h1>
-        <p className="arabic" dir="rtl">من تونس إلى المغرب</p>
-        <p className="subtitle">Un petit cadeau t&apos;attend.</p>
+        <Typewriter as="p" className="eyebrow">Route 01 · Un cadeau pour toi</Typewriter>
+        <Typewriter as="h1" id="journey-title">De Monastir <span>au Maroc</span></Typewriter>
+        <Typewriter as="p" className="arabic" dir="rtl">من تونس إلى المغرب</Typewriter>
+        <Typewriter as="p" className="subtitle">Un petit cadeau t&apos;attend.</Typewriter>
         <button className="primary-button journey-button" type="button" onClick={onOpenCode}>Ouvrir la surprise <span aria-hidden="true">→</span></button>
       </div>
     </section>
@@ -502,6 +572,9 @@ export default function Home() {
   const closeWishRef = useRef<HTMLButtonElement>(null);
   const validationInProgress = useRef(false);
   const reducedMotion = useReducedMotion();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => setIsClient(true), []);
 
   const enterKey = useCallback((key: (typeof keys)[number]) => {
     if (screen !== "code" || unlocking || key === "") return;
@@ -602,6 +675,12 @@ export default function Home() {
     return () => window.clearTimeout(timer);
   }, [reducedMotion, screen]);
 
+  const currentLetter = letterPage === 1 ? giftConfig.letter : giftConfig.secondLetter;
+  const letterGreeting = letterPage === 1
+    ? "Une lettre d'anniversaire, juste pour toi"
+    : "Et une dernière petite pensée";
+  const letterBodyDelay = 130 + getTypewriterDuration(letterGreeting) + 240;
+  const letterSignatureDelay = getLetterSequenceDuration(currentLetter, letterBodyDelay);
 
   const handleNextLetterPage = () => {
     setLetterPage(2);
@@ -641,8 +720,8 @@ return (
         aria-labelledby="code-title"
       >
         <div className="card-heading">
-          <p>Un petit secret</p>
-          <h1 id="code-title">Entre le code à 4 chiffres</h1>
+          <Typewriter as="p">Un petit secret</Typewriter>
+          <Typewriter as="h1" id="code-title" delay={120}>Entre le code à 4 chiffres</Typewriter>
         </div>
 
         <motion.div
@@ -662,9 +741,9 @@ return (
           ))}
         </motion.div>
 
-        <p className="code-helper">
+        <Typewriter as="p" className="code-helper" delay={260}>
           Le code est un petit rituel de surprise, pas un mot de passe.
-        </p>
+        </Typewriter>
 
         <div className="keypad" aria-label="Clavier numérique">
           {keys.map((key, index) =>
@@ -721,12 +800,12 @@ return (
       >
         <FloatingMagic />
         <div className="butterfly-mark" aria-hidden="true">🦋</div>
-        <p className="story-kicker">Surprise ouverte</p>
-        <h2>J&apos;ai préparé quelque chose<br />pour toi.</h2>
+        <Typewriter as="p" className="story-kicker">Surprise ouverte</Typewriter>
+        <Typewriter as="h2" delay={110}>J&apos;ai préparé quelque chose<br />pour toi.</Typewriter>
         {showKindnessJoke && (
-          <p className="story-copy">
+          <Typewriter as="p" className="story-copy" delay={260}>
             Analyse de ta gentillesse… 99 %… erreur : niveau trop élevé.
-          </p>
+          </Typewriter>
         )}
         <button className="primary-button" type="button" onClick={() => setScreen("birthday")}>
           Découvrir <span aria-hidden="true">→</span>
@@ -767,12 +846,13 @@ return (
         animate={{ opacity: 1, y: 0 }}
       >
         <FloatingMagic />
-        <p className="story-kicker">Aujourd&apos;hui, c&apos;est toi</p>
-        <h2>Joyeux anniversaire<br /><em>Fatima Ezzahra.</em></h2>
-        <p className="amazigh-name" lang="zgh-Tfng" aria-label="Fatima Ezzahra en tifinagh">
+        <BirthdayFireworks />
+        <Typewriter as="p" className="story-kicker">Aujourd&apos;hui, c&apos;est toi</Typewriter>
+        <Typewriter as="h2" delay={110}>Joyeux anniversaire<br /><em>Fatima Ezzahra.</em></Typewriter>
+        <Typewriter as="p" className="amazigh-name" lang="zgh-Tfng" aria-label="Fatima Ezzahra en tifinagh" delay={330}>
           <span aria-hidden="true">ⵣ</span> ⴼⴰⵟⵉⵎⴰ ⴻⵣⵣⴰⵀⵔⴰ <span aria-hidden="true">ⵣ</span>
-        </p>
-        <p className="album-intro">Cheers To You For Another 365 Days Around The Sun! 🦋</p>
+        </Typewriter>
+        <Typewriter as="p" className="album-intro" delay={440}>Cheers To You For Another 365 Days Around The Sun! 🦋</Typewriter>
 
         <div className="birthday-album" aria-label="Album photo d'anniversaire">
           {giftConfig.albumPhotos.map((photo, index) => (
@@ -908,7 +988,7 @@ return (
               <span>2e Pensée</span>
             </button>
           </div>
-          <h2>
+          <Typewriter as="h2" delay={120}>
             {letterPage === 1 ? (
               <>
                 Pour toi, <em>avec amitié 🦋</em>
@@ -918,7 +998,7 @@ return (
                 Et une dernière <em>petite chose…</em>
               </>
             )}
-          </h2>
+          </Typewriter>
         </div>
 
         {!letterOpened ? (
@@ -965,19 +1045,18 @@ return (
 
                 <div ref={letterScrollRef} className="letter-scroll-body">
                   <div className="letter-inner-content">
-                    <p className="card-greeting">
-                      {letterPage === 1
-                        ? "Une lettre d'anniversaire, juste pour toi"
-                        : "Et une dernière petite pensée"}
-                    </p>
+                    <Typewriter as="p" className="card-greeting" delay={130}>
+                      {letterGreeting}
+                    </Typewriter>
 
                     <LetterParagraphs
-                      message={letterPage === 1 ? giftConfig.letter : giftConfig.secondLetter}
+                      message={currentLetter}
+                      delay={letterBodyDelay}
                     />
 
                     <div className="card-signature-block">
                       <span className="signature-flourish" aria-hidden="true">✦ ───── ✦</span>
-                      <p className="card-signature">De Tunisie, avec amitié 🩷</p>
+                      <Typewriter as="p" className="card-signature" delay={letterSignatureDelay}>De Tunisie, avec amitié 🩷</Typewriter>
                     </div>
                   </div>
                 </div>
@@ -1073,27 +1152,27 @@ return (
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.2 }}
-        >Un souvenir de Tunisie</motion.p>
+        ><Typewriter delay={180}>Un souvenir de Tunisie</Typewriter></motion.p>
         <motion.h2
           initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.65, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
-        >Joyeux anniversaire,<br /><em>Fatima.</em></motion.h2>
+        ><Typewriter delay={260}>Joyeux anniversaire,<br /><em>Fatima.</em></Typewriter></motion.h2>
         <motion.p
           className="final-amazigh"
           lang="zgh-Tfng"
           initial={{ opacity: 0, y: 9 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.42 }}
-        >ⴼⴰⵟⵉⵎⴰ ⴻⵣⵣⴰⵀⵔⴰ</motion.p>
+        ><Typewriter delay={520}>ⴼⴰⵟⵉⵎⴰ ⴻⵣⵣⴰⵀⵔⴰ</Typewriter></motion.p>
         <motion.article
           className="memory-postcard"
           initial={{ opacity: 0, y: 18, rotate: -3 }}
           animate={{ opacity: 1, y: 0, rotate: -1.5 }}
           transition={{ duration: 0.58, delay: 0.52, ease: [0.22, 1, 0.36, 1] }}
         >
-          <p>365 nouvelles petites raisons de sourire.</p>
-          <small>Garde ce moment près de toi ✦</small>
+          <p><Typewriter delay={600}>365 nouvelles petites raisons de sourire.</Typewriter></p>
+          <small><Typewriter delay={1100}>Garde ce moment près de toi ✦</Typewriter></small>
         </motion.article>
 
         {/* ── Instagram Voice Note (Happy Birthday Song) ── */}
@@ -1106,7 +1185,7 @@ return (
           transition={{ duration: 0.45, delay: 0.72 }}
         >
           <Image src="/birthday-gift-qr.png" width={80} height={80} alt="QR code du cadeau d'anniversaire" />
-          <span>Un souvenir à scanner</span>
+          <Typewriter as="span" delay={900}>Un souvenir à scanner</Typewriter>
         </motion.div>
         <motion.button
           className="text-button"
@@ -1121,7 +1200,7 @@ return (
       </motion.section>
     )}
 
-    {typeof document !== "undefined" && createPortal(
+    {isClient && createPortal(
       <AnimatePresence>
         {wishCardOpen && (
           <motion.div
@@ -1150,9 +1229,9 @@ return (
                 aria-label="Fermer le vœu"
               >×</button>
               <div className="wish-envelope-letter">
-                <p className="wish-note-kicker">Mon vœu pour toi 🩷</p>
-                <p className="wish-note-message">{giftConfig.wishMessage}</p>
-                <p className="wish-note-signature">{giftConfig.wishSignature}</p>
+                <Typewriter as="p" className="wish-note-kicker" delay={560}>Mon vœu pour toi 🩷</Typewriter>
+                <Typewriter as="p" className="wish-note-message" delay={760}>{giftConfig.wishMessage}</Typewriter>
+                <Typewriter as="p" className="wish-note-signature" delay={getTypewriterDuration(giftConfig.wishMessage) + 940}>{giftConfig.wishSignature}</Typewriter>
               </div>
               <div className="wish-envelope-flap" />
               <span className="wish-envelope-seal" aria-hidden="true">🦋</span>
@@ -1163,7 +1242,7 @@ return (
       document.body
     )}
 
-    {typeof document !== "undefined" &&
+    {isClient &&
       createPortal(
         <div className="passcode-toast-viewport" aria-live="polite">
           <AnimatePresence>
@@ -1182,8 +1261,8 @@ return (
                   {activeHint.emoji}
                 </div>
                 <div className="hint-toast-content">
-                  <p className="hint-toast-title">{activeHint.title}</p>
-                  <p className="hint-toast-sub">{activeHint.sub}</p>
+                  <Typewriter as="p" className="hint-toast-title">{activeHint.title}</Typewriter>
+                  <Typewriter as="p" className="hint-toast-sub" delay={getTypewriterDuration(activeHint.title) + 160}>{activeHint.sub}</Typewriter>
                 </div>
                 <button
                   type="button"

@@ -25,6 +25,18 @@ body {
 }
 button { font: inherit; -webkit-tap-highlight-color: transparent; }
 
+/* Typewriter: the invisible final copy reserves the exact finished footprint.
+   Assistive technology receives one complete phrase, never a stream of characters. */
+.typewriter { display: grid !important; width: 100%; min-width: 0; }
+.typewriter__visual, .typewriter__sizer { display: block !important; grid-area: 1 / 1 !important; min-width: 0; }
+.typewriter__sizer { visibility: hidden; pointer-events: none; }
+.typewriter__sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+@media (prefers-reduced-motion: reduce) { .typewriter__visual { visibility: hidden; } .typewriter__sizer { visibility: visible; } }
+
+/* Keep existing component-specific span treatments on their intended content. */
+.journey-copy h1 .typewriter__visual, .journey-copy h1 .typewriter__sizer { color: inherit !important; }
+.amazigh-name .typewriter__visual, .amazigh-name .typewriter__sizer { width: auto !important; height: auto !important; border: 0 !important; border-radius: 0 !important; color: inherit !important; font-size: inherit !important; letter-spacing: inherit !important; }
+
 .editorial-shell { min-height: 100svh; position: relative; display: flex; flex-direction: column; align-items: center; overflow-x: clip; background: radial-gradient(circle at 12% 96%, #fc506b 0, transparent 25rem), linear-gradient(155deg, #a9173c 0%, #d83355 57%, #fa536a 140%); }
 .editorial-shell::before, .editorial-shell::after { content: "🦋"; position: fixed; z-index: 0; pointer-events: none; color: #d7f36c; filter: drop-shadow(0 3px 1px rgba(87,42,32,.2)); font-size: 1.55rem; animation: flutter 5s ease-in-out infinite; }.editorial-shell::before { top: 8%; left: 7%; }.editorial-shell::after { right: 8%; bottom: 10%; animation-delay: -2.4s; }
 .journey-section { position: relative; z-index: 1; display: flex; flex-direction: column; justify-content: center; width: min(100%, 620px); min-height: 100svh; padding: 22px 19px 30px; }
@@ -2586,4 +2598,151 @@ body {
   .final-screen .memory-photo-two { bottom: 10px; }
   .final-screen .qr-memory { margin-top: 6px; }
   .final-screen .qr-memory img { width: 42px; height: 42px; }
+}
+
+/* Typewriter integration: preserve the original flex treatment of the Amazigh
+   line while keeping the measured and animated layers perfectly stacked. */
+.amazigh-name.typewriter > .typewriter__visual,
+.amazigh-name.typewriter > .typewriter__sizer {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+/* Each scene is a viewport composition. Long letter content keeps its own
+   dedicated scroll area; the document itself never acquires a second scroll. */
+html, body { height: 100%; overflow: hidden; }
+.editorial-shell { height: 100svh; min-height: 100svh; max-height: 100svh; overflow: hidden; }
+.story-screen { height: 100svh !important; min-height: 0 !important; max-height: 100svh !important; overflow: hidden !important; }
+
+/* Keep a calm safety gutter around every full-screen composition. */
+.editorial-shell { box-sizing: border-box; padding-block: clamp(10px, 1.6svh, 20px); }
+.journey-section, .passcode-card, .story-screen { height: 100% !important; min-height: 0 !important; max-height: 100% !important; }
+
+/* Large screens retain the entire birthday composition inside the viewport. */
+@media (min-width: 768px) {
+  .birthday-screen {
+    justify-content: center;
+    gap: clamp(2px, 0.45svh, 6px);
+    padding: clamp(18px, 3svh, 30px) clamp(32px, 5vw, 60px) !important;
+  }
+
+  .birthday-screen h2 { font-size: clamp(2.15rem, 3.5vw, 3.45rem) !important; }
+  .birthday-screen .birthday-album {
+    width: min(48vw, 360px);
+    margin: clamp(3px, 0.6svh, 7px) auto !important;
+  }
+  .birthday-screen .luxury-cake-wrap { margin: clamp(2px, 0.45svh, 5px) auto !important; }
+  .birthday-screen .wish-button { margin-top: clamp(3px, 0.6svh, 7px) !important; }
+  .birthday-screen > .text-button { margin-top: 2px !important; }
+}
+
+/* Eight-second pyrotechnic sequence: launch flame, flash and falling embers. */
+.birthday-fireworks {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(72, 19, 42, .42), transparent 62%),
+    linear-gradient(180deg, rgba(83, 23, 47, .34), rgba(130, 48, 76, .14) 58%, transparent);
+  animation: birthday-sky 8.15s ease-out both;
+}
+.birthday-firework {
+  position: absolute;
+  width: 0;
+  height: 0;
+  filter: drop-shadow(0 0 13px var(--firework-color)) drop-shadow(0 0 28px color-mix(in srgb, var(--firework-color) 72%, transparent));
+}
+.birthday-firework::before {
+  content: "";
+  position: absolute;
+  width: 7px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(to bottom, #fffdf1 0 25%, #ffe28d 42%, var(--firework-color) 72%, transparent 100%);
+  box-shadow: 0 12px 18px 4px var(--firework-color), 0 28px 32px rgba(255, 178, 76, .66);
+  animation: birthday-firework-launch .72s var(--firework-delay) cubic-bezier(.16,.7,.28,1) both;
+}
+.birthday-firework::after {
+  content: "";
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fffdf2;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--firework-color) 48%, transparent), 0 0 48px 15px var(--firework-color);
+  animation: birthday-firework-flash 1.5s var(--firework-delay) cubic-bezier(.14,.74,.22,1) both;
+}
+.birthday-firework i {
+  position: absolute;
+  width: var(--spark-size);
+  height: var(--spark-size);
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fffef5 0 16%, #ffeaa4 25%, var(--firework-color) 68%);
+  box-shadow: 0 0 11px 3px var(--firework-color), 0 0 26px rgba(255,243,205,.95);
+  animation: birthday-firework-spark var(--spark-duration) calc(var(--firework-delay) + .62s + var(--spark-delay)) cubic-bezier(.12,.7,.22,1) both;
+}
+.birthday-firework i::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 3px;
+  height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(to bottom, color-mix(in srgb, var(--firework-color) 72%, white), transparent);
+  transform: translate(-50%, -10%);
+  opacity: .72;
+}
+@keyframes birthday-sky {
+  0%, 8% { opacity: 0; }
+  8%, 83% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes birthday-firework-launch {
+  0% { opacity: 0; transform: translate(-50%, 180px) scaleY(.3); }
+  8% { opacity: 1; }
+  84% { opacity: 1; transform: translate(-50%, -50%) scaleY(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scaleY(.2); }
+}
+@keyframes birthday-firework-flash {
+  0%, 38% { opacity: 0; transform: translate(-50%, -50%) scale(.1); }
+  45% { opacity: 1; transform: translate(-50%, -50%) scale(1.4); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(5.8); }
+}
+@keyframes birthday-firework-spark {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.15); }
+  7% { opacity: 1; }
+  62% { opacity: .95; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--spark-x)), calc(-50% + var(--spark-y))) scale(.3); }
+}
+@media (prefers-reduced-motion: reduce) { .birthday-fireworks { display: none; } }
+
+/* Override the generic story-layer rule: fireworks must be an absolute
+   decorative layer, never part of the vertical document flow. */
+.birthday-screen > .birthday-fireworks {
+  position: absolute !important;
+  z-index: 4 !important;
+  inset: 0 !important;
+  display: block;
+}
+.birthday-screen > .birthday-fireworks .birthday-firework:nth-child(2n) { transform: scale(1.16); }
+.birthday-screen > .birthday-fireworks .birthday-firework:nth-child(3n) { transform: scale(.9); }
+.birthday-screen > .birthday-fireworks ~ :not(.floating-magic) { z-index: 5; }
+
+/* The large-screen scene stays centered with a clear, visible safety margin.
+   No full-page scrolling: content is compacted before it can overflow. */
+@media (min-width: 768px) {
+  .editorial-shell { padding-block: clamp(14px, 2svh, 28px); }
+  .birthday-screen {
+    width: min(100%, 760px);
+    padding-block: clamp(22px, 3svh, 34px) !important;
+  }
+  .birthday-screen .story-kicker { margin-bottom: 3px; }
+  .birthday-screen .amazigh-name { margin-block: 1px; }
+  .birthday-screen .album-intro { margin-block: 2px 4px; }
+  .birthday-screen .birthday-album { width: min(46vw, 340px); }
 }
