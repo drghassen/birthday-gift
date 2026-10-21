@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -11,6 +11,8 @@ import type { GeometryObject, Topology } from "topojson-specification";
 import worldAtlas from "world-atlas/countries-110m.json";
 import { giftConfig } from "@/config/gift";
 import { getTypewriterDuration, Typewriter } from "@/components/Typewriter";
+import roseIcon from "@/images/Rose.svg";
+import confettiDay from "@/images/Confetti Day.svg";
 
 const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9, "", 0, "delete"] as const;
 const highlightedCountries = new Set(["504", "788"]);
@@ -28,21 +30,14 @@ const mapProjection = geoMercator().fitExtent([[25, 22], [335, 226]], northAfric
 const mapPath = geoPath(mapProjection);
 
 const monastirCoordinates: [number, number] = [10.83, 35.77];
-// A neutral reference point inside Morocco, selected only to make the symbolic distance estimate.
-// It is deliberately not presented to the recipient as a destination city or live location.
-const moroccoReferenceCoordinates: [number, number] = [-6.4, 31.5];
+const casablancaCoordinates: [number, number] = [-7.5898, 33.5731];
 const monastirPoint = mapProjection(monastirCoordinates) as [number, number];
-const moroccoPoint = mapProjection(moroccoReferenceCoordinates) as [number, number];
+const casablancaPoint = mapProjection(casablancaCoordinates) as [number, number];
 const routeCoordinates = Array.from({ length: 40 }, (_, index) =>
-  geoInterpolate(monastirCoordinates, moroccoReferenceCoordinates)(index / 39),
+  geoInterpolate(monastirCoordinates, casablancaCoordinates)(index / 39),
 );
 const journeyPath = mapPath({ type: "LineString", coordinates: routeCoordinates }) ?? "";
-const estimatedDistanceKm = Math.round(geoDistance(monastirCoordinates, moroccoReferenceCoordinates) * 6371);
-const confetti = Array.from({ length: 26 }, (_, index) => ({
-  left: `${(index * 37) % 97}%`,
-  delay: (index % 8) * 0.08,
-  rotate: (index * 47) % 180,
-}));
+const estimatedDistanceKm = Math.round(geoDistance(monastirCoordinates, casablancaCoordinates) * 6371);
 const birthdayFireworkBursts = [
   { left: "12%", top: "21%", delay: 0, color: "#f2a2b5" },
   { left: "87%", top: "18%", delay: 1.15, color: "#f4b56b" },
@@ -69,6 +64,10 @@ type Screen = "journey" | "code" | "unlocked" | "birthday" | "letter" | "final";
 
 function FloatingMagic() {
   return <div className="floating-magic" aria-hidden="true"><i>✦</i><i>✧</i><i>✦</i><i>✧</i><i>✦</i></div>;
+}
+
+function RoseIcon({ className }: { className?: string }) {
+  return <Image src={roseIcon} alt="" aria-hidden="true" className={className} />;
 }
 
 function BirthdayFireworks() {
@@ -166,9 +165,9 @@ function LetterParagraphs({ message, delay = 0 }: { message: string; delay?: num
           trimmed.includes("**") &&
           (trimmed.endsWith("**") ||
             trimmed.endsWith("🤍") ||
-            trimmed.endsWith("🦋") ||
+            trimmed.endsWith("🌹") ||
             trimmed.endsWith("💜") ||
-            trimmed.endsWith("🎂🦋"));
+            trimmed.endsWith("🎂🌹"));
 
         if (isFullCallout) {
           return (
@@ -257,7 +256,7 @@ function JourneyMap({ onOpenCode }: { onOpenCode: () => void }) {
     <section className="journey-section" aria-labelledby="journey-title">
       <div className="topline"><span>Un cadeau d&apos;anniversaire</span><span>TN → MA</span></div>
       <div className="map-frame">
-        <svg className="journey-map" viewBox="0 0 360 250" role="img" aria-label="Carte symbolique d’un trajet de Monastir vers le Maroc">
+        <svg className="journey-map" viewBox="0 0 360 250" role="img" aria-label="Carte symbolique d’un trajet de Monastir vers Casablanca">
           <defs>
             <linearGradient id="journeyGlow" x1="0" x2="1"><stop stopColor="#f3bd77" /><stop offset=".52" stopColor="#de8393" /><stop offset="1" stopColor="#b95c73" /></linearGradient>
             <filter id="softGlow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="3.5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
@@ -319,17 +318,16 @@ function JourneyMap({ onOpenCode }: { onOpenCode: () => void }) {
             </>
           )}
 
-          <circle className="place-dot" cx={moroccoPoint[0]} cy={moroccoPoint[1]} r="4" />
+          <circle className="place-dot" cx={casablancaPoint[0]} cy={casablancaPoint[1]} r="4" />
           <circle className="place-dot" cx={monastirPoint[0]} cy={monastirPoint[1]} r="4" />
-          <text className="map-label" x={moroccoPoint[0] - 20} y={moroccoPoint[1] + 18}>MAROC</text>
+          <text className="map-label" x={casablancaPoint[0]} y={casablancaPoint[1] + 16} textAnchor="middle">CASABLANCA</text>
           <text className="map-label" x={monastirPoint[0] - 28} y={monastirPoint[1] - 13}>MONASTIR</text>
         </svg>
         <p className="distance-counter"><span>Distance estimée restante</span><strong>{remainingDistance.toLocaleString("fr-FR")} km</strong></p>
       </div>
       <div className="journey-copy">
         <Typewriter as="p" className="eyebrow">Route 01 · Un cadeau pour toi</Typewriter>
-        <Typewriter as="h1" id="journey-title">De Monastir <span>au Maroc</span></Typewriter>
-        <Typewriter as="p" className="arabic" dir="rtl">من تونس إلى المغرب</Typewriter>
+<Typewriter as="h1" id="journey-title">De Monastir <span>à Casablanca</span></Typewriter>        <Typewriter as="p" className="arabic" dir="rtl">من تونس إلى المغرب</Typewriter>
         <Typewriter as="p" className="subtitle">Un petit cadeau t&apos;attend.</Typewriter>
         <button className="primary-button journey-button" type="button" onClick={onOpenCode}>Ouvrir la surprise <span aria-hidden="true">→</span></button>
       </div>
@@ -574,7 +572,13 @@ export default function Home() {
   const reducedMotion = useReducedMotion();
   const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => setIsClient(true), []);
+  useEffect(() => {
+    setIsClient(true);
+    const q = new URLSearchParams(window.location.search).get("screen");
+    if (q && ["journey", "code", "unlocked", "birthday", "letter", "final"].includes(q)) {
+      setScreen(q as Screen);
+    }
+  }, []);
 
   const enterKey = useCallback((key: (typeof keys)[number]) => {
     if (screen !== "code" || unlocking || key === "") return;
@@ -799,7 +803,9 @@ return (
         animate={{ opacity: 1, scale: 1 }}
       >
         <FloatingMagic />
-        <div className="butterfly-mark" aria-hidden="true">🦋</div>
+        <div className="rose-mark" aria-hidden="true">
+          <RoseIcon className="rose-mark-image" />
+        </div>
         <Typewriter as="p" className="story-kicker">Surprise ouverte</Typewriter>
         <Typewriter as="h2" delay={110}>J&apos;ai préparé quelque chose<br />pour toi.</Typewriter>
         {showKindnessJoke && (
@@ -852,7 +858,7 @@ return (
         <Typewriter as="p" className="amazigh-name" lang="zgh-Tfng" aria-label="Fatima Ezzahra en tifinagh" delay={330}>
           <span aria-hidden="true">ⵣ</span> ⴼⴰⵟⵉⵎⴰ ⴻⵣⵣⴰⵀⵔⴰ <span aria-hidden="true">ⵣ</span>
         </Typewriter>
-        <Typewriter as="p" className="album-intro" delay={440}>Cheers To You For Another 365 Days Around The Sun! 🦋</Typewriter>
+        <Typewriter as="p" className="album-intro" delay={440}>Cheers To You For Another 365 Days Around The Sun! 🌹</Typewriter>
 
         <div className="birthday-album" aria-label="Album photo d'anniversaire">
           {giftConfig.albumPhotos.map((photo, index) => (
@@ -907,10 +913,6 @@ return (
             <span className="lc-spark lc-spark-1">✦</span>
             <span className="lc-spark lc-spark-2">✧</span>
             <span className="lc-spark lc-spark-3">✦</span>
-          </div>
-          <div className="lc-gems">
-            <span className="lc-gem">💎</span>
-            <span className="lc-gem lc-gem-r">💎</span>
           </div>
           <div className="luxury-cake">
             <div className="lc-candles">
@@ -988,17 +990,20 @@ return (
               <span>2e Pensée</span>
             </button>
           </div>
-          <Typewriter as="h2" delay={120}>
-            {letterPage === 1 ? (
-              <>
-                Pour toi, <em>avec amitié 🦋</em>
-              </>
-            ) : (
-              <>
-                Et une dernière <em>petite chose…</em>
-              </>
-            )}
-          </Typewriter>
+          <div className="letter-title-lockup">
+            <Typewriter as="h2" delay={120}>
+              {letterPage === 1 ? (
+                <>
+                  Pour toi, <em>avec amitié</em>
+                </>
+              ) : (
+                <>
+                  Et une dernière <em>petite chose…</em>
+                </>
+              )}
+            </Typewriter>
+            {letterPage === 1 && <RoseIcon className="letter-title-rose" />}
+          </div>
         </div>
 
         {!letterOpened ? (
@@ -1008,7 +1013,7 @@ return (
             animate={{ opacity: 1, y: 0 }}
           >
             <div className="envelope-flap" />
-            <span className="butterfly-seal" aria-hidden="true">🦋</span>
+            <span className="rose-seal" aria-hidden="true"><RoseIcon className="rose-seal-image" /></span>
           </motion.div>
         ) : (
           <>
@@ -1027,7 +1032,7 @@ return (
                   <span className="wax-ribbon ribbon-right" />
                   <div className="wax-seal-disc">
                     <span className="wax-seal-inner">
-                      <i>🦋</i>
+                      <RoseIcon className="wax-seal-rose" />
                     </span>
                   </div>
                 </div>
@@ -1108,17 +1113,13 @@ return (
         animate={{ opacity: 1, scale: 1 }}
       >
         <FloatingMagic />
-        <div className="confetti-field" aria-hidden="true">
-          {confetti.map((piece, index) => (
-            <i
-              key={index}
-              style={{
-                left: piece.left,
-                animationDelay: `${piece.delay}s`,
-                transform: `rotate(${piece.rotate}deg)`,
-              }}
-            />
-          ))}
+        <div className="final-rose-display" aria-hidden="true">
+          <span className="final-rose-orbit">
+            <RoseIcon className="final-rose-display-image" />
+          </span>
+        </div>
+        <div className="final-confetti-layer" aria-hidden="true">
+          <Image src={confettiDay} alt="" className="final-confetti-art" />
         </div>
         <FinalMemoryPhoto
           className="memory-photo-one"
@@ -1146,7 +1147,9 @@ return (
           initial={{ opacity: 0, scale: 0.65, rotate: -20 }}
           animate={{ opacity: 1, scale: 1, rotate: 0 }}
           transition={{ duration: 0.5, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        >🦋</motion.div>
+        >
+          <RoseIcon className="final-rose-image" />
+        </motion.div>
         <motion.p
           className="story-kicker"
           initial={{ opacity: 0, y: 12 }}
@@ -1157,14 +1160,20 @@ return (
           initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={{ duration: 0.65, delay: 0.28, ease: [0.22, 1, 0.36, 1] }}
-        ><Typewriter delay={260}>Joyeux anniversaire,<br /><em>Fatima.</em></Typewriter></motion.h2>
-        <motion.p
-          className="final-amazigh"
-          lang="zgh-Tfng"
-          initial={{ opacity: 0, y: 9 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.45, delay: 0.42 }}
-        ><Typewriter delay={520}>ⴼⴰⵟⵉⵎⴰ ⴻⵣⵣⴰⵀⵔⴰ</Typewriter></motion.p>
+        ><Typewriter delay={260}>Joyeux anniversaire,<br /><em>Fatima Ezzahra.</em></Typewriter></motion.h2>
+        <motion.div
+          className="final-arabic-name"
+          dir="rtl"
+          lang="ar"
+          aria-label="Fatima Ezzahra en calligraphie arabe"
+          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.42 }}
+        >
+          <span className="arabic-flourish" aria-hidden="true">✦</span>
+          <Typewriter delay={520} as="span" className="arabic-calligraphy-text">فاطمة الزهراء</Typewriter>
+          <span className="arabic-flourish" aria-hidden="true">✦</span>
+        </motion.div>
         <motion.article
           className="memory-postcard"
           initial={{ opacity: 0, y: 18, rotate: -3 }}
@@ -1234,7 +1243,7 @@ return (
                 <Typewriter as="p" className="wish-note-signature" delay={getTypewriterDuration(giftConfig.wishMessage) + 940}>{giftConfig.wishSignature}</Typewriter>
               </div>
               <div className="wish-envelope-flap" />
-              <span className="wish-envelope-seal" aria-hidden="true">🦋</span>
+              <span className="wish-envelope-seal" aria-hidden="true"><RoseIcon className="wish-envelope-rose" /></span>
             </motion.article>
           </motion.div>
         )}
